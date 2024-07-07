@@ -4,7 +4,7 @@ Interpreter for a simple scripting language, based on the Monkey programming lan
 
 ## Language overview 
 
-The language supports integers, booleans (`true`, `false`) and `null`. Semicolons are optional. 
+The language supports integers, booleans (`true`, `false`) and strings. Semicolons are optional. 
 
 It includes assignment (`let`) and return statements, while everything else is considered an expression, including if/else.
 
@@ -14,6 +14,8 @@ It includes assignment (`let`) and return statements, while everything else is c
 >> let min = if (x < y) { x } else { y } 
 >> min
 2
+>> "Hello" + ", " + "world!";
+Hello, world!
 ```
 
 Lastly, the language has first-class functions and implicit return, and it fully supports closures.
