@@ -1,6 +1,6 @@
 # interpreter-in-go
 
-Interpreter for a simple scripting language, based on the Monkey programming language from the book [_Writing an Interpreter in Go_](https://interpreterbook.com/) by Thorsten Ball. 
+Interpreter for a simple scripting language, based on the Monkey programming language from the book <a href="https://interpreterbook.com" target="_blank">_Writing an Interpreter in Go_</a> by Thorsten Ball. 
 
 ## Language overview 
 
@@ -31,7 +31,7 @@ Lastly, the language has first-class functions and implicit return, and it fully
 
 To run the interpreter, follow these steps:
 
-1. Ensure that Go is installed on your system. You can download and install it from the official Go website.
+1. Ensure that Go is installed on your system. You can download and install it from the <a href="https://go.dev/dl" target="_blank">official Go website</a>.
 
 1. Clone this repository to your local machine.
 
