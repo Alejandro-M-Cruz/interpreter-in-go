@@ -73,6 +73,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: n.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(n.Value)
+	case *ast.StringLiteral:
+		return &object.String{Value: n.Value}
 	default:
 		return nil
 	}
@@ -173,6 +175,8 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 	switch {
 	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
 		return evalIntegerInfixExpression(operator, left.(*object.Integer), right.(*object.Integer))
+	case left.Type() == object.STRING && right.Type() == object.STRING:
+		return evalStringInfixExpression(operator, left.(*object.String), right.(*object.String))
 	case operator == "==":
 		return nativeBoolToBooleanObject(left == right) // pointer comparison -> true and false are always the same
 	case operator == "!=":
@@ -198,6 +202,19 @@ func evalIntegerInfixExpression(operator string, l *object.Integer, r *object.In
 		return nativeBoolToBooleanObject(l.Value > r.Value)
 	case "<":
 		return nativeBoolToBooleanObject(l.Value < r.Value)
+	case "==":
+		return nativeBoolToBooleanObject(l.Value == r.Value)
+	case "!=":
+		return nativeBoolToBooleanObject(l.Value != r.Value)
+	default:
+		return newError("unknown operator: %s %s %s", l.Type(), operator, r.Type())
+	}
+}
+
+func evalStringInfixExpression(operator string, l *object.String, r *object.String) object.Object {
+	switch operator {
+	case "+":
+		return &object.String{Value: l.Value + r.Value}
 	case "==":
 		return nativeBoolToBooleanObject(l.Value == r.Value)
 	case "!=":
@@ -249,6 +266,8 @@ func isTruthy(value object.Object) bool {
 	switch value.Type() {
 	case object.INTEGER:
 		return value.(*object.Integer).Value != 0
+	case object.STRING:
+		return value.(*object.String).Value != ""
 	default:
 		return true
 	}

@@ -213,6 +213,22 @@ type IfExpression struct {
 	Alternative *BlockStatement
 }
 
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (sl *StringLiteral) TokenLiteral() string {
+	return sl.Token.Literal
+}
+
+func (sl *StringLiteral) String() string {
+	return sl.Value
+}
+
+func (sl *StringLiteral) expressionNode() {
+}
+
 func (ie *IfExpression) TokenLiteral() string {
 	return ie.Token.Literal
 }
