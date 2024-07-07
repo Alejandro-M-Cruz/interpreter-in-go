@@ -133,19 +133,20 @@ func evalExpressions(expressions []ast.Expression, env *object.Environment) []ob
 }
 
 func evalCallExpression(f object.Object, args []object.Object) object.Object {
-	function, ok := f.(*object.Function)
+	switch fn := f.(type) {
+	case *object.Function:
+		extendedEnv := object.NewEnclosedEnvironment(fn.Environment)
 
-	if !ok {
+		for i, param := range fn.Parameters {
+			extendedEnv.Set(param.Value, args[i])
+		}
+
+		return unwrapReturnValue(Eval(fn.Body, extendedEnv))
+	case *object.Builtin:
+		return fn.Fn(args...)
+	default:
 		return newError("not a function: %s", f.Type())
 	}
-
-	extendedEnv := object.NewEnclosedEnvironment(function.Environment)
-
-	for i, arg := range args {
-		extendedEnv.Set(function.Parameters[i].Value, arg)
-	}
-
-	return unwrapReturnValue(Eval(function.Body, extendedEnv))
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {
@@ -287,5 +288,10 @@ func evalIdentifier(name string, env *object.Environment) object.Object {
 	if value, ok := env.Get(name); ok {
 		return value
 	}
+
+	if builtin, ok := builtins[name]; ok {
+		return builtin
+	}
+
 	return newError("identifier not found: %s", name)
 }
