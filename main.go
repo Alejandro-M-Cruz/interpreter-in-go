@@ -3,11 +3,18 @@ package main
 import (
 	"example.com/writing-an-interpreter/repl"
 	"fmt"
+	"github.com/joho/godotenv"
 	"os"
 	"os/user"
 )
 
 func main() {
+	err := godotenv.Load()
+
+	if err != nil {
+		panic(err)
+	}
+
 	u, err := user.Current()
 
 	if err != nil {

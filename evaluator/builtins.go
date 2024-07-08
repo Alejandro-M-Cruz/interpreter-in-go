@@ -5,6 +5,7 @@ import (
 	"errors"
 	"example.com/writing-an-interpreter/object"
 	"net/http"
+	"os"
 	"rsc.io/quote/v4"
 )
 
@@ -40,12 +41,15 @@ var builtins = map[string]*object.Builtin{
 }
 
 func getRandomQuote() (string, error) {
-	quotesApi := "https://zenquotes.io/api/random"
-	response, err := http.Get(quotesApi)
+	response, err := http.Get(os.Getenv("RANDOM_QUOTE_ENDPOINT"))
 
 	if err != nil {
 		return "", err
 	}
+
+	defer func() {
+		_ = response.Body.Close()
+	}()
 
 	var quotes Quotes
 
