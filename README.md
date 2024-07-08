@@ -4,7 +4,7 @@ Interpreter for a simple scripting language, called Mandrill, based on the Monke
 
 ## Language overview 
 
-The language supports integers, booleans (`true`, `false`) and strings. Semicolons are optional. 
+The language supports integers, booleans, strings and arrays. Semicolons are optional. 
 
 It includes assignment (`let`) and return statements, while everything else is considered an expression, including if/else.
 
@@ -14,8 +14,22 @@ It includes assignment (`let`) and return statements, while everything else is c
 >> let min = if (x < y) { x } else { y } 
 >> min
 2
+>>
+>> let is_same_number = x == y
+>> is_same_number
+false
+>>
 >> "Hello" + ", " + "world!";
 Hello, world!
+>>
+>> let my_arr = [1, 2, 3]
+>> let my_arr = append(my_arr, 4)
+>> my_arr
+[1, 2, 3, 4]
+>> my_arr[0]
+1
+>> my_arr[4]
+ERROR: index out of range [4] with length 4
 ```
 
 Lastly, the language has first-class functions and implicit return, and it fully supports closures.
