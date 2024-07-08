@@ -80,22 +80,52 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return evalPrefixExpression(n.Operator, right)
 	case *ast.IntegerLiteral:
-		return &object.Integer{Value: n.Value}
+		return newIntegerObject(n.Value)
 	case *ast.Boolean:
-		return nativeBoolToBooleanObject(n.Value)
+		return newBooleanObject(n.Value)
 	case *ast.Null:
 		return NULL
 	case *ast.StringLiteral:
-		return &object.String{Value: n.Value}
+		return newStringObject(n.Value)
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(n.Elements, env)
 		if len(elements) == 1 && isError(elements[0]) {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
+	case *ast.MapLiteral:
+		return evalMapLiteral(n, env)
 	default:
 		return nil
 	}
+}
+
+func evalMapLiteral(ml *ast.MapLiteral, env *object.Environment) object.Object {
+	m := &object.Map{Pairs: make(map[object.HashKey]object.MapPair)}
+
+	for keyExp, valExp := range ml.Pairs {
+		k := Eval(keyExp, env)
+
+		if isError(k) {
+			return k
+		}
+
+		hashable, ok := k.(object.Hashable)
+
+		if !ok {
+			return newError("invalid map key type: %s", k.Type())
+		}
+
+		v := Eval(valExp, env)
+
+		if isError(v) {
+			return v
+		}
+
+		m.Pairs[hashable.HashKey()] = object.MapPair{Key: k, Value: v}
+	}
+
+	return m
 }
 
 func evalProgram(statements []ast.Statement, env *object.Environment) object.Object {
@@ -197,9 +227,9 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 	case left.Type() == object.STRING && right.Type() == object.STRING:
 		return evalStringInfixExpression(operator, left.(*object.String), right.(*object.String))
 	case operator == "==":
-		return nativeBoolToBooleanObject(left == right) // pointer comparison -> true and false are always the same
+		return newBooleanObject(left == right) // pointer comparison -> true and false are always the same
 	case operator == "!=":
-		return nativeBoolToBooleanObject(left != right)
+		return newBooleanObject(left != right)
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	default:
@@ -210,21 +240,21 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 func evalIntegerInfixExpression(operator string, l *object.Integer, r *object.Integer) object.Object {
 	switch operator {
 	case "+":
-		return &object.Integer{Value: l.Value + r.Value}
+		return newIntegerObject(l.Value + r.Value)
 	case "-":
-		return &object.Integer{Value: l.Value - r.Value}
+		return newIntegerObject(l.Value - r.Value)
 	case "*":
-		return &object.Integer{Value: l.Value * r.Value}
+		return newIntegerObject(l.Value * r.Value)
 	case "/":
-		return &object.Integer{Value: l.Value / r.Value}
+		return newIntegerObject(l.Value / r.Value)
 	case ">":
-		return nativeBoolToBooleanObject(l.Value > r.Value)
+		return newBooleanObject(l.Value > r.Value)
 	case "<":
-		return nativeBoolToBooleanObject(l.Value < r.Value)
+		return newBooleanObject(l.Value < r.Value)
 	case "==":
-		return nativeBoolToBooleanObject(l.Value == r.Value)
+		return newBooleanObject(l.Value == r.Value)
 	case "!=":
-		return nativeBoolToBooleanObject(l.Value != r.Value)
+		return newBooleanObject(l.Value != r.Value)
 	default:
 		return newError("unknown operator: %s %s %s", l.Type(), operator, r.Type())
 	}
@@ -233,11 +263,11 @@ func evalIntegerInfixExpression(operator string, l *object.Integer, r *object.In
 func evalStringInfixExpression(operator string, l *object.String, r *object.String) object.Object {
 	switch operator {
 	case "+":
-		return &object.String{Value: l.Value + r.Value}
+		return newStringObject(l.Value + r.Value)
 	case "==":
-		return nativeBoolToBooleanObject(l.Value == r.Value)
+		return newBooleanObject(l.Value == r.Value)
 	case "!=":
-		return nativeBoolToBooleanObject(l.Value != r.Value)
+		return newBooleanObject(l.Value != r.Value)
 	default:
 		return newError("unknown operator: %s %s %s", l.Type(), operator, r.Type())
 	}
@@ -255,17 +285,17 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
-	return nativeBoolToBooleanObject(!isTruthy(right))
+	return newBooleanObject(!isTruthy(right))
 }
 
 func evalMinusOperatorPrefixExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER {
 		return newError("unknown operator: -%s", right.Type())
 	}
-	return &object.Integer{Value: -right.(*object.Integer).Value}
+	return newIntegerObject(-right.(*object.Integer).Value)
 }
 
-func nativeBoolToBooleanObject(value bool) *object.Boolean {
+func newBooleanObject(value bool) *object.Boolean {
 	if value {
 		return TRUE
 	}
@@ -313,18 +343,27 @@ func evalIdentifier(name string, env *object.Environment) object.Object {
 }
 
 func evalIndexExpression(left object.Object, index object.Object) object.Object {
-	switch i := index.(type) {
-	case *object.Integer:
-		switch l := left.(type) {
-		case *object.Array:
-			return evalArrayIndexExpression(l, i)
-		case *object.String:
-			return evalStringIndexExpression(l, i)
-		default:
-			return newError("could not index %s", left.Type())
+	switch l := left.(type) {
+	case *object.Array:
+		i, ok := index.(*object.Integer)
+		if !ok {
+			return newError("invalid index type: %s", index.Type())
 		}
+		return evalArrayIndexExpression(l, i)
+	case *object.String:
+		i, ok := index.(*object.Integer)
+		if !ok {
+			return newError("invalid index type: %s", index.Type())
+		}
+		return evalStringIndexExpression(l, i)
+	case *object.Map:
+		k, ok := index.(object.Hashable)
+		if !ok {
+			return newError("invalid map key type: %s", index.Type())
+		}
+		return evalMapIndexExpression(l, k)
 	default:
-		return newError("invalid index type %s", object.INTEGER)
+		return newError("could not index %s", left.Type())
 	}
 }
 
@@ -345,5 +384,20 @@ func evalStringIndexExpression(str *object.String, index *object.Integer) object
 		return newError("index out of range [%d] with length %d", idx, len(str.Value))
 	}
 
-	return &object.String{Value: string(str.Value[idx])}
+	return newStringObject(string(str.Value[idx]))
+}
+
+func evalMapIndexExpression(l *object.Map, i object.Hashable) object.Object {
+	if pair, ok := l.Pairs[i.HashKey()]; ok {
+		return pair.Value
+	}
+	return NULL
+}
+
+func newIntegerObject(value int64) *object.Integer {
+	return &object.Integer{Value: value}
+}
+
+func newStringObject(value string) *object.String {
+	return &object.String{Value: value}
 }

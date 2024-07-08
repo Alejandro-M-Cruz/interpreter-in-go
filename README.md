@@ -4,11 +4,11 @@ Interpreter for a simple scripting language, called Mandrill, based on the Monke
 
 ## Language overview 
 
-The language supports integers, booleans, strings and arrays. Semicolons are optional. 
+The language supports integers, booleans, strings, arrays, maps and null. Semicolons are optional. 
 
-It includes assignment (`let`) and return statements, while everything else is considered an expression, including if/else.
+It features assignment (`let`) and return statements, while everything else is considered an expression, including if/else.
 
-```
+```javascript
 >> let x = 2
 >> let y = 3
 >> let min = if (x < y) { x } else { y } 
@@ -30,17 +30,46 @@ Hello, world!
 1
 >> my_arr[4]
 ERROR: index out of range [4] with length 4
+>>
+>> let nameKey = "name"
+>> let my_map = {nameKey: "John", "age": 30}
+>> my_map["name"]
+John
+>> my_map["surname"]
+null
 ```
 
-Lastly, the language has first-class functions and implicit return, and it fully supports closures.
+The language has first-class functions and implicit return, and it fully supports closures.
 
-```
+```javascript
 >> let newAdder = fn(x) { fn(n) { x + n } }
 >> let addThree = newAdder(3)
 >> addThree(4)
 7
 ```
 
+Lastly, it comes with some built-in functions: `len`, `first`, `last`, `skip`, `append` and `print`.
+
+```javascript
+>> let my_arr = [1, 2, 4]
+>> let my_arr = append(my_arr, 8)
+>> my_arr
+[1, 2, 4, 8]
+>> len(my_arr)
+4
+>> last(my_arr)
+>> 8
+>>
+>> let my_str = "Hello, world!"
+>> len(my_str)
+13
+>> skip(my_str, 7)
+world!
+>> 
+>> print("Hello", "world")
+Hello world
+null
+```
 
 
 ## How to run

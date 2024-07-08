@@ -400,3 +400,30 @@ func (ie *IndexExpression) String() string {
 
 func (ie *IndexExpression) expressionNode() {
 }
+
+type MapLiteral struct {
+	Token token.Token // the { token
+	Pairs map[Expression]Expression
+}
+
+func (ml *MapLiteral) TokenLiteral() string {
+	return ml.Token.Literal
+}
+
+func (ml *MapLiteral) String() string {
+	var out bytes.Buffer
+	var pairs []string
+
+	for k, v := range ml.Pairs {
+		pairs = append(pairs, k.String()+": "+v.String())
+	}
+
+	out.WriteRune('{')
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteRune('}')
+
+	return out.String()
+}
+
+func (ml *MapLiteral) expressionNode() {
+}

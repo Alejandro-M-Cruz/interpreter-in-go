@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"example.com/writing-an-interpreter/ast"
 	"fmt"
+	"hash/fnv"
 	"strings"
 )
 
@@ -15,6 +16,7 @@ const (
 	STRING       = "STRING"
 	NULL         = "NULL"
 	ARRAY        = "ARRAY"
+	MAP          = "MAP"
 	FUNCTION     = "FUNCTION"
 	RETURN_VALUE = "RETURN_VALUE"
 	ERROR        = "ERROR"
@@ -24,6 +26,15 @@ const (
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+type Hashable interface {
+	HashKey() HashKey
+}
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
 }
 
 type Integer struct {
@@ -38,6 +49,10 @@ func (i *Integer) Inspect() string {
 	return fmt.Sprintf("%d", i.Value)
 }
 
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+}
+
 type Boolean struct {
 	Value bool
 }
@@ -48,6 +63,16 @@ func (b *Boolean) Type() ObjectType {
 
 func (b *Boolean) Inspect() string {
 	return fmt.Sprintf("%t", b.Value)
+}
+
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+	return HashKey{Type: b.Type(), Value: value}
 }
 
 type Null struct{}
@@ -123,6 +148,12 @@ func (s *String) Inspect() string {
 	return s.Value
 }
 
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
+}
+
 type BuiltinFunction func(args ...Object) Object
 
 type Builtin struct {
@@ -156,6 +187,34 @@ func (a *Array) Inspect() string {
 	out.WriteRune('[')
 	out.WriteString(strings.Join(elements, ", "))
 	out.WriteRune(']')
+
+	return out.String()
+}
+
+type MapPair struct {
+	Key   Object
+	Value Object
+}
+
+type Map struct {
+	Pairs map[HashKey]MapPair
+}
+
+func (m *Map) Type() ObjectType {
+	return MAP
+}
+
+func (m *Map) Inspect() string {
+	var out bytes.Buffer
+	var pairs []string
+
+	for _, pair := range m.Pairs {
+		pairs = append(pairs, pair.Key.Inspect()+": "+pair.Value.Inspect())
+	}
+
+	out.WriteRune('{')
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteRune('}')
 
 	return out.String()
 }

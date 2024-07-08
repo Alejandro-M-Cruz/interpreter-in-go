@@ -63,9 +63,10 @@ func NewParser(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
-	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefix(token.LBRACE, p.parseMapLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -416,6 +417,11 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		p.nextToken()
+
+		if p.curTokenIs(end) {
+			return list
+		}
+
 		list = append(list, p.parseExpression(LOWEST))
 	}
 
@@ -436,4 +442,44 @@ func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 	}
 
 	return exp
+}
+
+func (p *Parser) parseMapLiteral() ast.Expression {
+	return &ast.MapLiteral{
+		Token: p.curToken,
+		Pairs: p.parseExpressionPairs(),
+	}
+}
+
+func (p *Parser) parseExpressionPairs() map[ast.Expression]ast.Expression {
+	pairs := make(map[ast.Expression]ast.Expression)
+
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		k := p.parseExpression(LOWEST)
+
+		if k == nil {
+			msg := fmt.Sprintf("Map key must be an expression, received a statement instead")
+			p.appendError(msg)
+			return nil
+		}
+
+		if !p.expectPeek(token.COLON) {
+			return nil
+		}
+
+		p.nextToken()
+		v := p.parseExpression(LOWEST)
+		pairs[k] = v
+
+		if !p.peekTokenIs(token.RBRACE) && !p.expectPeek(token.COMMA) {
+			return nil
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	return pairs
 }

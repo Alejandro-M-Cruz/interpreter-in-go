@@ -40,9 +40,11 @@ func builtinLen(args ...object.Object) object.Object {
 
 	switch arg := args[0].(type) {
 	case *object.String:
-		return &object.Integer{Value: int64(len(arg.Value))}
+		return newIntegerObject(int64(len(arg.Value)))
 	case *object.Array:
-		return &object.Integer{Value: int64(len(arg.Elements))}
+		return newIntegerObject(int64(len(arg.Elements)))
+	case *object.Map:
+		return newIntegerObject(int64(len(arg.Pairs)))
 	default:
 		return newInvalidArgumentError("len", arg)
 	}
@@ -63,7 +65,7 @@ func builtinFirst(args ...object.Object) object.Object {
 		if len(arg.Value) == 0 {
 			return NULL
 		}
-		return &object.String{Value: string(arg.Value[0])}
+		return newStringObject(string(arg.Value[0]))
 	default:
 		return newInvalidArgumentError("first", arg)
 	}
@@ -91,9 +93,9 @@ func builtinSkip(args ...object.Object) object.Object {
 		return &object.Array{Elements: newElements}
 	case *object.String:
 		if s > int64(len(arg.Value)) {
-			return &object.String{}
+			return newStringObject("")
 		}
-		return &object.String{Value: arg.Value[s:]}
+		return newStringObject(arg.Value[s:])
 	default:
 		return newInvalidArgumentError("first", arg)
 	}
@@ -114,7 +116,7 @@ func builtinLast(args ...object.Object) object.Object {
 		if len(arg.Value) == 0 {
 			return NULL
 		}
-		return &object.String{Value: string(arg.Value[len(arg.Value)-1])}
+		return newStringObject(string(arg.Value[len(arg.Value)-1]))
 	default:
 		return newInvalidArgumentError("last", arg)
 	}
