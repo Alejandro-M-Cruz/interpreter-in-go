@@ -1,7 +1,11 @@
 package evaluator
 
 import (
+	"encoding/json"
+	"errors"
 	"example.com/writing-an-interpreter/object"
+	"net/http"
+	"rsc.io/quote/v4"
 )
 
 var builtins = map[string]*object.Builtin{
@@ -19,4 +23,45 @@ var builtins = map[string]*object.Builtin{
 			}
 		},
 	},
+	"quote": {
+		Fn: func(args ...object.Object) object.Object {
+			result := &object.String{}
+			q, err := getRandomQuote()
+
+			if err != nil {
+				result.Value = quote.Opt()
+			} else {
+				result.Value = q
+			}
+
+			return result
+		},
+	},
+}
+
+func getRandomQuote() (string, error) {
+	quotesApi := "https://zenquotes.io/api/random"
+	response, err := http.Get(quotesApi)
+
+	if err != nil {
+		return "", err
+	}
+
+	var quotes Quotes
+
+	if err := json.NewDecoder(response.Body).Decode(&quotes); err != nil {
+		return "", err
+	}
+
+	if len(quotes) == 0 || len(quotes[0].Quote) == 0 {
+		return "", errors.New("could not retrieve a quote")
+	}
+
+	return quotes[0].Quote, nil
+}
+
+type Quotes []struct {
+	Quote  string `json:"q"`
+	Author string `json:"a"`
+	Html   string `json:"h"`
 }
