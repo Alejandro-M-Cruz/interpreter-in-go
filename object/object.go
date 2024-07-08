@@ -14,9 +14,10 @@ const (
 	BOOLEAN      = "BOOLEAN"
 	STRING       = "STRING"
 	NULL         = "NULL"
+	ARRAY        = "ARRAY"
+	FUNCTION     = "FUNCTION"
 	RETURN_VALUE = "RETURN_VALUE"
 	ERROR        = "ERROR"
-	FUNCTION     = "FUNCTION"
 	BUILTIN      = "BUILTIN"
 )
 
@@ -134,4 +135,27 @@ func (b *Builtin) Type() ObjectType {
 
 func (b *Builtin) Inspect() string {
 	return "built-in function"
+}
+
+type Array struct {
+	Elements []Object
+}
+
+func (a *Array) Type() ObjectType {
+	return ARRAY
+}
+
+func (a *Array) Inspect() string {
+	var out bytes.Buffer
+	var elements []string
+
+	for _, e := range a.Elements {
+		elements = append(elements, e.Inspect())
+	}
+
+	out.WriteRune('[')
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteRune(']')
+
+	return out.String()
 }

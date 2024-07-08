@@ -29,6 +29,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nil
 	case *ast.Identifier:
 		return evalIdentifier(n.Value, env)
+	case *ast.FunctionLiteral:
+		return &object.Function{
+			Parameters:  n.Parameters,
+			Body:        n.Body,
+			Environment: env,
+		}
 	case *ast.CallExpression:
 		function := Eval(n.Function, env)
 		if isError(function) {
@@ -39,12 +45,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return arguments[0]
 		}
 		return evalCallExpression(function, arguments)
-	case *ast.FunctionLiteral:
-		return &object.Function{
-			Parameters:  n.Parameters,
-			Body:        n.Body,
-			Environment: env,
-		}
 	case *ast.ReturnStatement:
 		value := Eval(n.ReturnValue, env)
 		if isError(value) {
@@ -63,6 +63,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return right
 		}
 		return evalInfixExpression(n.Operator, left, right)
+	case *ast.IndexExpression:
+		left := Eval(n.Left, env)
+		if isError(left) {
+			return left
+		}
+		index := Eval(n.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(left, index)
 	case *ast.PrefixExpression:
 		right := Eval(n.Right, env)
 		if isError(right) {
@@ -77,6 +87,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return NULL
 	case *ast.StringLiteral:
 		return &object.String{Value: n.Value}
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(n.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
 	default:
 		return nil
 	}
@@ -294,4 +310,40 @@ func evalIdentifier(name string, env *object.Environment) object.Object {
 	}
 
 	return newError("identifier not found: %s", name)
+}
+
+func evalIndexExpression(left object.Object, index object.Object) object.Object {
+	switch i := index.(type) {
+	case *object.Integer:
+		switch l := left.(type) {
+		case *object.Array:
+			return evalArrayIndexExpression(l, i)
+		case *object.String:
+			return evalStringIndexExpression(l, i)
+		default:
+			return newError("could not index %s", left.Type())
+		}
+	default:
+		return newError("invalid index type %s", object.INTEGER)
+	}
+}
+
+func evalArrayIndexExpression(arr *object.Array, index *object.Integer) object.Object {
+	idx := index.Value
+
+	if idx < 0 || idx >= int64(len(arr.Elements)) {
+		return newError("index out of range [%d] with length %d", idx, len(arr.Elements))
+	}
+
+	return arr.Elements[idx]
+}
+
+func evalStringIndexExpression(str *object.String, index *object.Integer) object.Object {
+	idx := index.Value
+
+	if idx < 0 || idx >= int64(len(str.Value)) {
+		return newError("index out of range [%d] with length %d", idx, len(str.Value))
+	}
+
+	return &object.String{Value: string(str.Value[idx])}
 }

@@ -19,8 +19,10 @@ var builtins = map[string]*object.Builtin{
 			switch arg := args[0].(type) {
 			case *object.String:
 				return &object.Integer{Value: int64(len(arg.Value))}
+			case *object.Array:
+				return &object.Integer{Value: int64(len(arg.Elements))}
 			default:
-				return newError("invalid argument for the `len` function, got %s", args[0].Type())
+				return newError("invalid argument for the `len` function, got %s", arg.Type())
 			}
 		},
 	},
@@ -36,6 +38,20 @@ var builtins = map[string]*object.Builtin{
 			}
 
 			return result
+		},
+	},
+	"append": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) < 2 {
+				return newError("expected at least 2 arguments, %d were given", len(args))
+			}
+
+			switch arg := args[0].(type) {
+			case *object.Array:
+				return &object.Array{Elements: append(arg.Elements, args[1:]...)}
+			default:
+				return newError("invalid argument for the `append` function, got %s", arg.Type())
+			}
 		},
 	},
 }

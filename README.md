@@ -1,6 +1,6 @@
 # interpreter-in-go
 
-Interpreter for a simple scripting language, based on the Monkey programming language from the book <a href="https://interpreterbook.com" target="_blank">_Writing an Interpreter in Go_</a> by Thorsten Ball. 
+Interpreter for a simple scripting language, called Mandrill, based on the Monkey programming language from the book <a href="https://interpreterbook.com" target="_blank">_Writing an Interpreter in Go_</a> by Thorsten Ball. 
 
 ## Language overview 
 
