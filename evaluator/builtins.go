@@ -152,7 +152,7 @@ func getRandomQuote() (string, error) {
 		return "", err
 	}
 
-	if len(quotes) == 0 || len(quotes[0].Quote) == 0 {
+	if len(quotes) == 0 || len(quotes[0].Quote) == 0 || quotes[0].Author == os.Getenv("SYSTEM_QUOTE_AUTHOR") {
 		return "", errors.New("could not retrieve a quote")
 	}
 

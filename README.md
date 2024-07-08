@@ -48,7 +48,7 @@ The language has first-class functions and implicit return, and it fully support
 7
 ```
 
-Lastly, it comes with some built-in functions: `len`, `first`, `last`, `skip`, `append` and `print`.
+Lastly, it comes with some built-in functions: `len`, `first`, `last`, `skip`, `append`, `print` and `quote`.
 
 ```javascript
 >> let my_arr = [1, 2, 4]
@@ -69,6 +69,9 @@ world!
 >> print("Hello", "world")
 Hello world
 null
+>>
+>> quote()
+If a program is too slow, it must have a loop.
 ```
 
 
