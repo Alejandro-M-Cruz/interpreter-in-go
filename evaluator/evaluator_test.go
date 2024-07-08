@@ -397,13 +397,30 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("four")`, 4},
 		{`len("hello world")`, 11},
 		{`len(1)`, "invalid argument for the `len` function, got INTEGER"},
-		{`len("one", "two")`, "expected 1 argument, 2 were given"},
+		{`len("one", "two")`, "expected 1 argument, received 2"},
+		{`len([1, 2, 3])`, 3},
+		{`len([])`, 0},
+		{`print("hello", "world!")`, nil},
+		{`first([1, 2, 3])`, 1},
+		{`first([])`, nil},
+		{`first(1)`, "invalid argument for the `first` function, got INTEGER"},
+		{`last([1, 2, 3])`, 3},
+		{`last([])`, nil},
+		{`last(1)`, "invalid argument for the `last` function, got INTEGER"},
+		{`skip([1, 2, 3], 1)`, []int{2, 3}},
+		{`skip([], 1)`, []int{}},
+		{`append([], 1)`, []int{1}},
+		{`append(1, 1)`, "invalid argument for the `append` function, got INTEGER"},
 	}
+
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
+
 		switch expected := tt.expected.(type) {
 		case int:
 			testIntegerObject(t, evaluated, int64(expected))
+		case nil:
+			testNullObject(t, evaluated)
 		case string:
 			errObj, ok := evaluated.(*object.Error)
 			if !ok {
@@ -414,6 +431,22 @@ func TestBuiltinFunctions(t *testing.T) {
 			if errObj.Message != expected {
 				t.Errorf("wrong error message. expected=%q, got=%q",
 					expected, errObj.Message)
+			}
+		case []int:
+			array, ok := evaluated.(*object.Array)
+			if !ok {
+				t.Errorf("obj not Array. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+
+			if len(array.Elements) != len(expected) {
+				t.Errorf("wrong num of elements. want=%d, got=%d",
+					len(expected), len(array.Elements))
+				continue
+			}
+
+			for i, expectedElem := range expected {
+				testIntegerObject(t, array.Elements[i], int64(expectedElem))
 			}
 		}
 	}
