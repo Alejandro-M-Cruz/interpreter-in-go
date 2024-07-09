@@ -10,6 +10,7 @@ import (
 	"os"
 	"rsc.io/quote/v4"
 	"strings"
+	"unicode/utf8"
 )
 
 var builtins = map[string]*object.Builtin{
@@ -40,7 +41,7 @@ func builtinLen(args ...object.Object) object.Object {
 
 	switch arg := args[0].(type) {
 	case *object.String:
-		return newIntegerObject(int64(len(arg.Value)))
+		return newIntegerObject(stringLength(arg.Value))
 	case *object.Array:
 		return newIntegerObject(int64(len(arg.Elements)))
 	case *object.Map:
@@ -48,6 +49,10 @@ func builtinLen(args ...object.Object) object.Object {
 	default:
 		return newInvalidArgumentError("len", arg)
 	}
+}
+
+func stringLength(s string) int64 {
+	return int64(utf8.RuneCountInString(s))
 }
 
 func builtinFirst(args ...object.Object) object.Object {
@@ -62,13 +67,44 @@ func builtinFirst(args ...object.Object) object.Object {
 		}
 		return arg.Elements[0]
 	case *object.String:
-		if len(arg.Value) == 0 {
+		if arg.Value == "" {
 			return NULL
 		}
-		return newStringObject(string(arg.Value[0]))
+		return newStringObject(stringFirst(arg.Value))
 	default:
 		return newInvalidArgumentError("first", arg)
 	}
+}
+
+func stringFirst(s string) string {
+	_, size := utf8.DecodeRuneInString(s)
+	return s[:size]
+}
+
+func builtinLast(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newArgumentNumberError(1, len(args), false)
+	}
+
+	switch arg := args[0].(type) {
+	case *object.Array:
+		if len(arg.Elements) == 0 {
+			return NULL
+		}
+		return arg.Elements[len(arg.Elements)-1]
+	case *object.String:
+		if arg.Value == "" {
+			return NULL
+		}
+		return newStringObject(stringLast(arg.Value))
+	default:
+		return newInvalidArgumentError("last", arg)
+	}
+}
+
+func stringLast(value string) string {
+	_, size := utf8.DecodeLastRuneInString(value)
+	return value[len(value)-size:]
 }
 
 func builtinSkip(args ...object.Object) object.Object {
@@ -92,34 +128,21 @@ func builtinSkip(args ...object.Object) object.Object {
 		copy(newElements, arg.Elements[s:])
 		return &object.Array{Elements: newElements}
 	case *object.String:
-		if s > int64(len(arg.Value)) {
-			return newStringObject("")
-		}
-		return newStringObject(arg.Value[s:])
+		return newStringObject(stringSkip(arg.Value, s))
 	default:
 		return newInvalidArgumentError("first", arg)
 	}
 }
 
-func builtinLast(args ...object.Object) object.Object {
-	if len(args) != 1 {
-		return newArgumentNumberError(1, len(args), false)
+func stringSkip(str string, skip int64) string {
+	if skip >= stringLength(str) {
+		return ""
 	}
-
-	switch arg := args[0].(type) {
-	case *object.Array:
-		if len(arg.Elements) == 0 {
-			return NULL
-		}
-		return arg.Elements[len(arg.Elements)-1]
-	case *object.String:
-		if len(arg.Value) == 0 {
-			return NULL
-		}
-		return newStringObject(string(arg.Value[len(arg.Value)-1]))
-	default:
-		return newInvalidArgumentError("last", arg)
+	for ; skip > 0; skip-- {
+		_, size := utf8.DecodeRuneInString(str)
+		str = str[size:]
 	}
+	return str
 }
 
 func builtinQuote(_ ...object.Object) object.Object {
