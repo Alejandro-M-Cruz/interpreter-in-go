@@ -58,7 +58,7 @@ Lastly, it comes with some built-in functions: `len`, `first`, `last`, `skip`, `
 >> len(my_arr)
 4
 >> last(my_arr)
->> 8
+8
 >>
 >> let my_str = "Hello, world!"
 >> len(my_str)
